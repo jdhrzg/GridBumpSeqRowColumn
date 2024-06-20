@@ -25,6 +25,16 @@
           <LocCanonicalName>.GridBumpSeqRowColumn.MyCommand</LocCanonicalName>
         </Strings>
       </Button>
+
+      <Button guid="GridBumpSeqRowColumn" id="MyCommand2" priority="0x0200" type="Button">
+        <Parent guid="GridBumpSeqRowColumn" id="MyMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="StatusInformation" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>My Command 2</ButtonText>
+          <LocCanonicalName>.GridBumpSeqRowColumn.MyCommand2</LocCanonicalName>
+        </Strings>
+      </Button>      
     </Buttons>
   </Commands>
 
@@ -32,6 +42,7 @@
     <GuidSymbol name="GridBumpSeqRowColumn" value="{62b4acbb-e1c9-4b13-921d-86734607fbc0}">
       <IDSymbol name="MyMenuGroup" value="0x0001" />
       <IDSymbol name="MyCommand" value="0x0100" />
+      <IDSymbol name="MyCommand2" value="0x0200" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>
