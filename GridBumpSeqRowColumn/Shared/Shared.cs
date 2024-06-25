@@ -10,7 +10,7 @@ namespace GridBumpSeqRowColumn
 {
     internal class Shared
     {
-        public enum FindValueTypes
+        public enum GetValueTypes
         {
             GridRow = 0,
             GridColumn = 1,
@@ -20,10 +20,9 @@ namespace GridBumpSeqRowColumn
         public static Regex GridRowRegex = new Regex(@"((?i)grid\.row=""(.*?)""(?-i))");
         public static Regex GridColumnRegex = new Regex(@"((?i)grid\.column=""(.*?)""(?-i))");
 
-        //TODO: Left off - working on this method, then work on doing something to those values (inc, dec, seq), after that put the values back into the selected span
-        public static async List<int> GetValuesFromSelection(FindValueTypes findValueType)
+        public static async Task<List<KeyValuePair<string, int>>> GetValuesByMatchFromSelectionAsync(GetValueTypes findValueType)
         {
-            var valuesFromSelection = new List<int>();
+            var valuesByMatchString = new List<KeyValuePair<string, int>>();
 
             var doc = await VS.Documents.GetActiveDocumentViewAsync();
             if (doc != null)
@@ -32,14 +31,12 @@ namespace GridBumpSeqRowColumn
                 var formattedSelectedText = selectedText.Replace(" ", "");
 
                 Regex regex = null;
-
-                if (findValueType == FindValueTypes.GridRow)
+                if (findValueType == GetValueTypes.GridRow)
                     regex = GridRowRegex;
-                else if (findValueType == FindValueTypes.GridColumn)
+                else if (findValueType == GetValueTypes.GridColumn)
                     regex = GridColumnRegex;
 
                 var matches = regex.Matches(formattedSelectedText);
-
                 foreach (Match match in matches)
                 {
                     var quoteStartIdx = match.Value.IndexOf('"');
@@ -47,16 +44,25 @@ namespace GridBumpSeqRowColumn
 
                     if (quoteStartIdx != -1 && quoteEndIdx != -1)
                     {
-                        int intValue;
-
-                        var success = int.TryParse(match.Value.Substring((quoteStartIdx + 1), quoteEndIdx - (quoteStartIdx + 1)), out intValue);
-
-                        if (success)
+                        string stringValue = match.Value.Substring((quoteStartIdx + 1), quoteEndIdx - (quoteStartIdx + 1));
+                        var parseSuccess = int.TryParse(stringValue, out int intValue);
+                        if (parseSuccess)
                         {
-                            valuesFromSelection.Add(intValue);
+                            valuesByMatchString.Add(new KeyValuePair<string, int>(match.Value, intValue));
                         }
                     }
                 }
+            }
+
+            return valuesByMatchString;
+        }
+
+        //TODO: Left off - working on this method - need to figure out better datastructure for valuesByMatches, after that put the values back into the selected span
+        public static void IncrementValues(ref List<KeyValuePair<string, int>> valuesByMatch)
+        {
+            foreach (var valueByMatch in valuesByMatch)
+            {
+                valueByMatch.Value = valueByMatch + 1;
             }
         }
     }
