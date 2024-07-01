@@ -10,6 +10,18 @@ namespace GridBumpSeqRowColumn
 {
     internal class Shared
     {
+        public class EditableKeyValuePair<TKey, TValue>
+        {
+            public TKey Key { get; set; }
+            public TValue Value { get; set; }
+
+            public EditableKeyValuePair(TKey key, TValue value)
+            {
+                Key = key;
+                Value = value;
+            }
+        }
+
         public enum GetValueTypes
         {
             GridRow = 0,
@@ -20,9 +32,9 @@ namespace GridBumpSeqRowColumn
         public static Regex GridRowRegex = new Regex(@"((?i)grid\.row=""(.*?)""(?-i))");
         public static Regex GridColumnRegex = new Regex(@"((?i)grid\.column=""(.*?)""(?-i))");
 
-        public static async Task<List<KeyValuePair<string, int>>> GetValuesByMatchFromSelectionAsync(GetValueTypes findValueType)
+        public static async Task<List<EditableKeyValuePair<string, int>>> GetValuesByMatchFromSelectionAsync(GetValueTypes findValueType)
         {
-            var valuesByMatchString = new List<KeyValuePair<string, int>>();
+            var valuesByMatch = new List<EditableKeyValuePair<string, int>>();
 
             var doc = await VS.Documents.GetActiveDocumentViewAsync();
             if (doc != null)
@@ -48,22 +60,41 @@ namespace GridBumpSeqRowColumn
                         var parseSuccess = int.TryParse(stringValue, out int intValue);
                         if (parseSuccess)
                         {
-                            valuesByMatchString.Add(new KeyValuePair<string, int>(match.Value, intValue));
+                            valuesByMatch.Add(new EditableKeyValuePair<string, int>(match.Value, intValue));
                         }
                     }
                 }
             }
 
-            return valuesByMatchString;
+            return valuesByMatch;
         }
 
-        //TODO: Left off - working on this method - need to figure out better datastructure for valuesByMatches, after that put the values back into the selected span
-        public static void IncrementValues(ref List<KeyValuePair<string, int>> valuesByMatch)
+        public static void IncrementValues(ref List<EditableKeyValuePair<string, int>> valuesByMatch)
         {
             foreach (var valueByMatch in valuesByMatch)
             {
-                valueByMatch.Value = valueByMatch + 1;
+                valueByMatch.Value++;
             }
+        }
+
+        public static void DecrementValues(ref List<EditableKeyValuePair<string, int>> valuesByMatch)
+        {
+            foreach (var valueByMatch in valuesByMatch)
+            {
+                valueByMatch.Value--;
+            }
+        }
+
+
+        //TODO: Left off - working on this method - get method working, after that put the values back into the selected span
+        public static void SequenceValues(ref List<EditableKeyValuePair<string, int>> valuesByMatch)
+        {
+            var valuesGrouped = valuesByMatch.Select(x => x.Value).GroupBy(y => y);
+
+            //foreach (var valueByMatch in valuesByMatch)
+            //{ 
+
+            //}
         }
     }
 }

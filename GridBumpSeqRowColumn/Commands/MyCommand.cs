@@ -6,7 +6,7 @@ namespace GridBumpSeqRowColumn
     [Command(PackageIds.MyCommand)]
     internal sealed class MyCommand : BaseCommand<MyCommand>
     {
-        protected override Task ExecuteAsync(OleMenuCmdEventArgs e)
+        protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
         {
             //var doc = await VS.Documents.GetActiveDocumentViewAsync();
             //if (doc != null)
@@ -31,10 +31,10 @@ namespace GridBumpSeqRowColumn
             //    }
             //}
 
-            var test = Shared.GetValuesByMatchFromSelectionAsync(Shared.GetValueTypes.GridRow);
-            var test2 = Shared.GetValuesByMatchFromSelectionAsync(Shared.GetValueTypes.GridColumn);
+            var test = await Shared.GetValuesByMatchFromSelectionAsync(Shared.GetValueTypes.GridRow);
+            var test2 = await Shared.GetValuesByMatchFromSelectionAsync(Shared.GetValueTypes.GridColumn);
 
-            return Task.FromResult(0);
+            Shared.SequenceValues(ref test);
         }
     }
 }
