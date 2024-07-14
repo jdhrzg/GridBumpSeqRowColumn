@@ -5,57 +5,63 @@ using System.Threading.Tasks;
 
 namespace GridBumpSeqRowColumn
 {
+    public class MutableKeyValuePair<TKey, TValue>
+    {
+        public TKey Key { get; set; }
+        public TValue Value { get; set; }
+
+        public MutableKeyValuePair(TKey key, TValue value)
+        {
+            Key = key;
+            Value = value;
+        }
+    }
+
+    public enum FindableGridProperty
+    {
+        GridRow = 0,
+        GridColumn = 1,
+    }
+
     internal class Shared
     {
-        public class MutableKeyValuePair<TKey, TValue>
-        {
-            public TKey Key { get; set; }
-            public TValue Value { get; set; }
-
-            public MutableKeyValuePair(TKey key, TValue value)
-            {
-                Key = key;
-                Value = value;
-            }
-        }
-
-        public enum GetValueTypes
-        {
-            GridRow = 0,
-            GridColumn = 1,
-        }
-
         //TODO: Consider other formats like <Grid.Row>1</Grid.Row>
         public static Regex GridRowRegex = new Regex(@"((?i)grid\.row=""(.*?)""(?-i))");
         public static Regex GridColumnRegex = new Regex(@"((?i)grid\.column=""(.*?)""(?-i))");
 
-        private static async Task<string> GetFormattedSelectionTextAsync()
+        //TODO: Make this public so methods in here don't need to recreate the selection string over and over and so they don't hide what's being worked on
+        private static async Task<string> GetSelectionTextAsync()
         {
-            string formattedSelectionText = null;
+            string selectionText = null;
 
             var doc = await VS.Documents.GetActiveDocumentViewAsync();
             if (doc != null)
             {
-                string selectionText = doc.TextView.Selection.SelectedSpans[0].GetText();
-                formattedSelectionText = selectionText.Replace(" ", "");
+                selectionText = doc.TextView.Selection.SelectedSpans[0].GetText();
             }
 
-            return formattedSelectionText;
+            return selectionText;
         }
 
-        public static async Task<List<MutableKeyValuePair<string, int>>> GetValuesByMatchFromSelectionAsync(GetValueTypes findValueType)
+        private static MatchCollection GetGridPropertyMatchesFromString(FindableGridProperty gridProperty, string input)
         {
-            List<MutableKeyValuePair<string, int>> valuesByMatch = null;
-
-            var formattedSelectionText = await GetFormattedSelectionTextAsync();
-
             Regex regex = null;
-            if (findValueType == GetValueTypes.GridRow)
+
+            if (gridProperty == FindableGridProperty.GridRow)
                 regex = GridRowRegex;
-            else if (findValueType == GetValueTypes.GridColumn)
+            else if (gridProperty == FindableGridProperty.GridColumn)
                 regex = GridColumnRegex;
 
-            var matches = regex.Matches(formattedSelectionText);
+            return regex.Matches(input);
+        }
+
+        public static async Task<List<MutableKeyValuePair<string, int>>> GetValuesByMatchFromSelectionAsync(FindableGridProperty gridProperty)
+        {
+            List<MutableKeyValuePair<string, int>> valuesByMatch = new List<MutableKeyValuePair<string, int>>();
+
+            var selectionText = await GetSelectionTextAsync();
+
+            var matches = GetGridPropertyMatchesFromString(gridProperty, selectionText);
             foreach (Match match in matches)
             {
                 var quoteStartIdx = match.Value.IndexOf('"');
@@ -63,6 +69,7 @@ namespace GridBumpSeqRowColumn
 
                 if (quoteStartIdx != -1 && quoteEndIdx != -1)
                 {
+                    // TODO: Test for spaces inside the quotes Grid.Row=" 2"
                     string stringValue = match.Value.Substring((quoteStartIdx + 1), quoteEndIdx - (quoteStartIdx + 1));
                     var parseSuccess = int.TryParse(stringValue, out int intValue);
                     if (parseSuccess)
@@ -75,13 +82,30 @@ namespace GridBumpSeqRowColumn
             return valuesByMatch;
         }
 
-        // TODO: LEFT 0FF - Continue on this method
-        //public static async void ReplaceValuesByMatchInSelectionAsync(List<MutableKeyValuePair<string, int>> valuesByMatch)
-        //{
-        //    var formattedSelectionText = await GetFormattedSelectionTextAsync();
+        // TODO: LEFT 0FF - This method works but now we have to apply the changes to the document
+        public static async Task ReplaceValuesByMatchInSelectionAsync(FindableGridProperty gridProperty, List<MutableKeyValuePair<string, int>> valuesByMatch)
+        {
+            var selectionText = await GetSelectionTextAsync();
 
+            var matches = GetGridPropertyMatchesFromString(gridProperty, selectionText);
+            for (var i = 0; i < matches.Count; i++)
+            {
+                Match match = matches[i];
 
-        //}
+                var quoteStartIdx = match.Value.IndexOf('"');
+                var quoteEndIdx = match.Value.LastIndexOf('"');
+
+                if (quoteStartIdx != -1 && quoteEndIdx != -1)
+                {
+                    var matchInsideQuoteValueStart = quoteStartIdx + 1;
+                    var matchInsideQuoteValueLength = quoteEndIdx - (quoteStartIdx + 1);
+
+                    var totalInsideQuoteValueStart = match.Index + matchInsideQuoteValueStart;
+
+                    selectionText = selectionText.Remove(totalInsideQuoteValueStart, matchInsideQuoteValueLength).Insert(totalInsideQuoteValueStart, valuesByMatch[i].Value.ToString());
+                }
+            }
+        }
 
         public static void IncrementValues(ref List<MutableKeyValuePair<string, int>> valuesByMatch)
         {
