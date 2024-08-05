@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -29,37 +30,21 @@ namespace GridBumpSeqRowColumn
         public static Regex GridRowRegex = new Regex(@"((?i)grid\.row=""(.*?)""(?-i))");
         public static Regex GridColumnRegex = new Regex(@"((?i)grid\.column=""(.*?)""(?-i))");
 
-        //TODO: Make this public so methods in here don't need to recreate the selection string over and over and so they don't hide what's being worked on
-        private static async Task<string> GetSelectionTextAsync()
+        public static string GetSelectionTextFromDocumentView(DocumentView? documentView)
         {
             string selectionText = null;
 
-            var doc = await VS.Documents.GetActiveDocumentViewAsync();
-            if (doc != null)
+            if (documentView != null)
             {
-                selectionText = doc.TextView.Selection.SelectedSpans[0].GetText();
+                selectionText = documentView.TextView.Selection.SelectedSpans[0].GetText();
             }
 
             return selectionText;
         }
 
-        private static MatchCollection GetGridPropertyMatchesFromString(FindableGridProperty gridProperty, string input)
-        {
-            Regex regex = null;
-
-            if (gridProperty == FindableGridProperty.GridRow)
-                regex = GridRowRegex;
-            else if (gridProperty == FindableGridProperty.GridColumn)
-                regex = GridColumnRegex;
-
-            return regex.Matches(input);
-        }
-
-        public static async Task<List<MutableKeyValuePair<string, int>>> GetValuesByMatchFromSelectionAsync(FindableGridProperty gridProperty)
+        public static List<MutableKeyValuePair<string, int>> GetValuesByMatchFromSelection(string selectionText, FindableGridProperty gridProperty)
         {
             List<MutableKeyValuePair<string, int>> valuesByMatch = new List<MutableKeyValuePair<string, int>>();
-
-            var selectionText = await GetSelectionTextAsync();
 
             var matches = GetGridPropertyMatchesFromString(gridProperty, selectionText);
             foreach (Match match in matches)
@@ -82,11 +67,8 @@ namespace GridBumpSeqRowColumn
             return valuesByMatch;
         }
 
-        // TODO: LEFT 0FF - This method works but now we have to apply the changes to the document
-        public static async Task ReplaceValuesByMatchInSelectionAsync(FindableGridProperty gridProperty, List<MutableKeyValuePair<string, int>> valuesByMatch)
+        public static void ReplaceValuesByMatchInSelection(string selectionText, List<MutableKeyValuePair<string, int>> valuesByMatch, FindableGridProperty gridProperty)
         {
-            var selectionText = await GetSelectionTextAsync();
-
             var matches = GetGridPropertyMatchesFromString(gridProperty, selectionText);
             for (var i = 0; i < matches.Count; i++)
             {
@@ -105,6 +87,25 @@ namespace GridBumpSeqRowColumn
                     selectionText = selectionText.Remove(totalInsideQuoteValueStart, matchInsideQuoteValueLength).Insert(totalInsideQuoteValueStart, valuesByMatch[i].Value.ToString());
                 }
             }
+        }
+
+        private static MatchCollection GetGridPropertyMatchesFromString(FindableGridProperty gridProperty, string fromString)
+        {
+            Regex regex = null;
+
+            if (gridProperty == FindableGridProperty.GridRow)
+                regex = GridRowRegex;
+            else if (gridProperty == FindableGridProperty.GridColumn)
+                regex = GridColumnRegex;
+
+            return regex.Matches(fromString);
+        }
+
+        // TODO: LEFT 0FF - Work on ApplySelectionChangesToDocumentAsync
+        public static async Task ApplySelectionChangesToDocumentAsync(string selectionTextWithChanges, DocumentView documentView)
+        {
+            
+            //documentView.TextView.Selection.SelectedSpans[0].TranslateTo(selectionTextWithChanges, Microsoft.VisualStudio.Text.SpanTrackingMode.EdgeNegative);
         }
 
         public static void IncrementValues(ref List<MutableKeyValuePair<string, int>> valuesByMatch)

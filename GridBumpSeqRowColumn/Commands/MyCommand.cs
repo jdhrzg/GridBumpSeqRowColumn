@@ -31,12 +31,21 @@ namespace GridBumpSeqRowColumn
             //    }
             //}
 
-            var test = await Shared.GetValuesByMatchFromSelectionAsync(FindableGridProperty.GridColumn);
-            var test2 = await Shared.GetValuesByMatchFromSelectionAsync(FindableGridProperty.GridRow);
 
-            Shared.SequenceValues(ref test);
+            var documentView = await VS.Documents.GetActiveDocumentViewAsync();
 
-            await Shared.ReplaceValuesByMatchInSelectionAsync(FindableGridProperty.GridColumn, test);
+            string selectionText = Shared.GetSelectionTextFromDocumentView(documentView);
+
+            var valuesByMatch = Shared.GetValuesByMatchFromSelection(selectionText, FindableGridProperty.GridColumn);
+            
+            Shared.SequenceValues(ref valuesByMatch);
+
+            Shared.ReplaceValuesByMatchInSelection(selectionText, valuesByMatch, FindableGridProperty.GridColumn);
+
+
+
+
+
         }
     }
 }
