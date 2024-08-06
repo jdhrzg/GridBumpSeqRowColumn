@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Net.NetworkInformation;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace GridBumpSeqRowColumn
 {
@@ -24,7 +22,7 @@ namespace GridBumpSeqRowColumn
         GridColumn = 1,
     }
 
-    internal class Shared
+    internal class BumpSeqUtility
     {
         //TODO: Consider other formats like <Grid.Row>1</Grid.Row>
         public static Regex GridRowRegex = new Regex(@"((?i)grid\.row=""(.*?)""(?-i))");
@@ -67,7 +65,39 @@ namespace GridBumpSeqRowColumn
             return valuesByMatch;
         }
 
-        public static void ReplaceValuesByMatchInSelection(string selectionText, List<MutableKeyValuePair<string, int>> valuesByMatch, FindableGridProperty gridProperty)
+        public static void IncrementValues(ref List<MutableKeyValuePair<string, int>> valuesByMatch)
+        {
+            foreach (var valueByMatch in valuesByMatch)
+            {
+                valueByMatch.Value++;
+            }
+        }
+
+        public static void DecrementValues(ref List<MutableKeyValuePair<string, int>> valuesByMatch)
+        {
+            foreach (var valueByMatch in valuesByMatch)
+            {
+                valueByMatch.Value--;
+            }
+        }
+
+        public static void SequenceValues(ref List<MutableKeyValuePair<string, int>> valuesByMatch)
+        {
+            var valuesByMatchGrouped = valuesByMatch.GroupBy(x => x.Value);
+            var newValue = valuesByMatch.Min(x => x.Value);
+
+            foreach (var valuesByMatchGroup in valuesByMatchGrouped)
+            {
+                foreach (var valueByMatch in valuesByMatchGroup)
+                {
+                    valueByMatch.Value = newValue;
+                }
+
+                newValue++;
+            }
+        }
+
+        public static void ReplaceValuesByMatchInSelection(ref string selectionText, List<MutableKeyValuePair<string, int>> valuesByMatch, FindableGridProperty gridProperty)
         {
             var matches = GetGridPropertyMatchesFromString(gridProperty, selectionText);
             for (var i = 0; i < matches.Count; i++)
@@ -101,43 +131,9 @@ namespace GridBumpSeqRowColumn
             return regex.Matches(fromString);
         }
 
-        // TODO: LEFT 0FF - Work on ApplySelectionChangesToDocumentAsync
-        public static async Task ApplySelectionChangesToDocumentAsync(string selectionTextWithChanges, DocumentView documentView)
+        public static void ApplySelectionChangesToDocument(string selectionTextWithChanges, DocumentView documentView)
         {
-            
-            //documentView.TextView.Selection.SelectedSpans[0].TranslateTo(selectionTextWithChanges, Microsoft.VisualStudio.Text.SpanTrackingMode.EdgeNegative);
-        }
-
-        public static void IncrementValues(ref List<MutableKeyValuePair<string, int>> valuesByMatch)
-        {
-            foreach (var valueByMatch in valuesByMatch)
-            {
-                valueByMatch.Value++;
-            }
-        }
-
-        public static void DecrementValues(ref List<MutableKeyValuePair<string, int>> valuesByMatch)
-        {
-            foreach (var valueByMatch in valuesByMatch)
-            {
-                valueByMatch.Value--;
-            }
-        }
-
-        public static void SequenceValues(ref List<MutableKeyValuePair<string, int>> valuesByMatch)
-        {
-            var valuesByMatchGrouped = valuesByMatch.GroupBy(x => x.Value);
-            var newValue = valuesByMatch.Min(x => x.Value);
-
-            foreach (var valuesByMatchGroup in valuesByMatchGrouped)
-            {
-                foreach (var valueByMatch in valuesByMatchGroup)
-                {
-                    valueByMatch.Value = newValue;
-                }
-
-                newValue++;
-            }
+            documentView.TextBuffer.Replace(documentView.TextView.Selection.SelectedSpans[0], selectionTextWithChanges);
         }
     }
 }

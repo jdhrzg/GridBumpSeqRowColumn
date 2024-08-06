@@ -34,18 +34,15 @@ namespace GridBumpSeqRowColumn
 
             var documentView = await VS.Documents.GetActiveDocumentViewAsync();
 
-            string selectionText = Shared.GetSelectionTextFromDocumentView(documentView);
+            string selectionText = BumpSeqUtility.GetSelectionTextFromDocumentView(documentView);
 
-            var valuesByMatch = Shared.GetValuesByMatchFromSelection(selectionText, FindableGridProperty.GridColumn);
+            var valuesByMatch = BumpSeqUtility.GetValuesByMatchFromSelection(selectionText, FindableGridProperty.GridRow);
             
-            Shared.SequenceValues(ref valuesByMatch);
+            BumpSeqUtility.SequenceValues(ref valuesByMatch);
 
-            Shared.ReplaceValuesByMatchInSelection(selectionText, valuesByMatch, FindableGridProperty.GridColumn);
+            BumpSeqUtility.ReplaceValuesByMatchInSelection(ref selectionText, valuesByMatch, FindableGridProperty.GridRow);
 
-
-
-
-
+            BumpSeqUtility.ApplySelectionChangesToDocument(selectionText, documentView);
         }
     }
 }
